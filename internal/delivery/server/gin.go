@@ -5,9 +5,11 @@ import (
 	"log"
 	"os"
 	"pt-xyz/configs/database"
+	deliveryHttp "pt-xyz/internal/delivery/http"
 	"pt-xyz/internal/entities"
 	"pt-xyz/internal/repository"
 	"pt-xyz/internal/usecases"
+	"pt-xyz/middlewares"
 
 	"github.com/gin-gonic/gin"
 )
@@ -35,6 +37,14 @@ func Run() error {
 	}
 	defer database.DB.Close()
 	
+	adminRepository := repository.NewRepositoryAdmin(database.DB)
+	consumerRepo := repository.NewRepositoryConsumer(database.DB)
+
+	adminService := usecases.NewServiceAdmin(adminRepository)
+	consumerService := usecases.NewServiceConsumer(consumerRepo, adminRepository)
+
+	consumerHandler := deliveryHttp.NewHandlerConsumer(consumerService)
+
 	if os.Getenv("ADMIN_USERNAME") != "" && os.Getenv("ADMIN_PASSWORD") != "" && os.Getenv("ADMIN_FULLNAME") != "" {
         
         admin := entities.Admin{
@@ -43,8 +53,6 @@ func Run() error {
             FullName: os.Getenv("ADMIN_FULLNAME"),
         }
 
-        adminRepository := repository.NewRepositoryAdmin(database.DB)
-        adminService := usecases.NewServiceAdmin(adminRepository)
 
         adminService.AddAdmin(&admin)
     } else {
@@ -57,13 +65,27 @@ func Run() error {
 	router.Use(CORSMiddleware())
 
 	v1 := router.Group("/v1")
-	 routes := v1.Group("") 
+	routes := v1.Group("") 
+	
+	routes.POST("/register", consumerHandler.Register)
+	routes.POST("/login", consumerHandler.Login)
 
-	 routes.GET("/test", func(c *gin.Context) {
-		 c.JSON(200, gin.H{
-			 "message": "Application Running",
-		 })
-	 })
+
+	routes.GET("/test-admin", middlewares.AuthMiddleware(), middlewares.AuthorizationMiddleware("admin"), func(c *gin.Context) {
+		claims, _ := c.Get("claims")
+		c.JSON(200, gin.H{
+			"message": "Application Running",
+			"data": claims,
+		})
+	})
+
+	routes.GET("/test", middlewares.AuthMiddleware(), func(c *gin.Context) {
+		claims, _ := c.Get("claims")
+		c.JSON(200, gin.H{
+			"message": "Application Running",
+			"data": claims,
+		})
+	})
 
 	return router.Run(":" + os.Getenv("PORT"))
 }

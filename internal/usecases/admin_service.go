@@ -18,9 +18,9 @@ func NewServiceAdmin(repo repository.RepositoryAdmin) *ServiceAdmin {
 }
 
 func (s *ServiceAdmin) AddAdmin(admin *entities.Admin) {
-	exists, err := s.repo.CheckAdminExists()
+	exists, err := s.repo.GetAdmin()
 	if err != nil {
-		log.Fatalln("Failed to check if admin exists:", err)
+		log.Println("Failed to check if admin exists")
 	}
 	
 	if exists {
@@ -30,14 +30,14 @@ func (s *ServiceAdmin) AddAdmin(admin *entities.Admin) {
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(admin.Password), bcrypt.DefaultCost)
 	if err != nil {
-		log.Fatalln("Failed to hash password:", err)
+		log.Println("Failed to hash password:", err)
 	}
 
 	admin.Password = string(hashedPassword)
 
-	err = s.repo.InsertAdmin(admin)
+	err = s.repo.CreateAdmin(admin)
 	if err != nil {
-		log.Fatalln("Failed to insert admin:", err)
+		log.Println("Failed to insert admin:", err)
 	}
 
 	log.Println("Admin successfully inserted.")
