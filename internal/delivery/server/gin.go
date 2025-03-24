@@ -2,8 +2,12 @@ package server
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"pt-xyz/configs/database"
+	"pt-xyz/internal/entities"
+	"pt-xyz/internal/repository"
+	"pt-xyz/internal/usecases"
 
 	"github.com/gin-gonic/gin"
 )
@@ -30,6 +34,24 @@ func Run() error {
 		return fmt.Errorf("failed to initialize database: %w", err)
 	}
 	defer database.DB.Close()
+	
+	if os.Getenv("ADMIN_USERNAME") != "" && os.Getenv("ADMIN_PASSWORD") != "" && os.Getenv("ADMIN_FULLNAME") != "" {
+        
+        admin := entities.Admin{
+            UserName: os.Getenv("ADMIN_USERNAME"),
+            Password: os.Getenv("ADMIN_PASSWORD"),
+            FullName: os.Getenv("ADMIN_FULLNAME"),
+        }
+
+        adminRepository := repository.NewRepositoryAdmin(database.DB)
+        adminService := usecases.NewServiceAdmin(adminRepository)
+
+        adminService.AddAdmin(&admin)
+    } else {
+        log.Println("Environment variables for ADMIN_USERNAME, ADMIN_PASSWORD, or ADMIN_FULLNAME are missing!")
+    }
+
+	
 
 	router := gin.Default()
 	router.Use(CORSMiddleware())
