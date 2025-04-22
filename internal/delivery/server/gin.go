@@ -41,14 +41,15 @@ func Run() error {
 	consumerRepo := repository.NewRepositoryConsumer(database.DB)
 	transactionRepo := repository.NewRepositoryTransaction()
 	transactionProductRepo := repository.NewRepositoryTransactionProduct()
-	loanLimitRepo := repository.NewRepositoryLoanLimit()
+	loanLimitRepo := repository.NewRepositoryLoanLimit(database.DB)
 	loanInstallmentRepo := repository.NewRepositoryLoanInstallment()
 	masterProductXyzRepo := repository.NewRepositoryMasterProductXYZ()
 
-	adminService := usecases.NewServiceAdmin(adminRepository)
+	adminService := usecases.NewServiceAdmin(database.DB, adminRepository, consumerRepo, loanLimitRepo, masterProductXyzRepo)
 	consumerService := usecases.NewServiceConsumer(consumerRepo, adminRepository)
 	transactionService := usecases.NewServiceTransaction(database.DB, transactionRepo, transactionProductRepo, loanLimitRepo, loanInstallmentRepo, masterProductXyzRepo)
 
+	adminHandler := deliveryHttp.NewHandlerAdmin(adminService)
 	consumerHandler := deliveryHttp.NewHandlerConsumer(consumerService)
 	transactionHandler := deliveryHttp.NewHandlerTransaction(transactionService)
 
@@ -79,9 +80,11 @@ func Run() error {
 	routes.POST("/login", consumerHandler.Login)
 	
 	// Broken Access control
-
 	routes.POST("/transaction", middlewares.AuthMiddleware(), transactionHandler.CreateTransaction)
+
+	routes.POST("/add-limit/consumer", middlewares.AuthMiddleware(), middlewares.AuthorizationMiddleware("admin"), adminHandler.AddLimitConsumer)
 	
+	// routes.GET("/get-creation/:id", middlewares.AuthMiddleware(), middlewares.AuthorizationMiddleware("admin"), adminHandler.GetCreation)
 
 
 	routes.GET("/test-admin", middlewares.AuthMiddleware(), middlewares.AuthorizationMiddleware("admin"), func(c *gin.Context) {
