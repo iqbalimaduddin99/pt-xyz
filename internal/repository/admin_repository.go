@@ -1,22 +1,24 @@
 package repository
 
 import (
+	"pt-xyz/configs/database"
 	"pt-xyz/internal/entities"
 
-	"github.com/jmoiron/sqlx"
+	"github.com/google/uuid"
 )
 
 type RepositoryAdmin interface {
 	GetAdmin() (bool, error)
 	CreateAdmin(admin *entities.Admin) error
 	GetAdminByUserName(userName string) (*entities.Admin, error)
+	GetAdminByID(id uuid.UUID) (*entities.Admin, error)
 }
 
 type RepositoryAdminImpl struct {
-	db *sqlx.DB
+	db database.Database
 }
 
-func NewRepositoryAdmin(db *sqlx.DB) *RepositoryAdminImpl  {
+func NewRepositoryAdmin(db database.Database) *RepositoryAdminImpl  {
 	return &RepositoryAdminImpl{db : db}
 }
 
@@ -49,6 +51,20 @@ func (r *RepositoryAdminImpl) GetAdminByUserName(userName string) (*entities.Adm
 	
 	var admin entities.Admin
 	err := r.db.Get(&admin, query, userName)
+	if err != nil {
+		return nil, err
+	}
+
+	return &admin, nil
+}
+
+
+
+func (r *RepositoryAdminImpl) GetAdminByID(id uuid.UUID) (*entities.Admin, error) {
+	query := `SELECT * FROM admin WHERE id = ?`
+	
+	var admin entities.Admin
+	err := r.db.Get(&admin, query, id)
 	if err != nil {
 		return nil, err
 	}

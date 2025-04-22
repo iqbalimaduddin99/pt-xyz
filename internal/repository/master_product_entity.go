@@ -9,6 +9,7 @@ import (
 
 type RepositoryMasterProductXYZ interface {
 	GetMasterProductForTransactionById(tx *sqlx.DB,id uuid.UUID)  (*entities.MasterProductPtXyz, error)
+	GetMasterProductByCreator(id uuid.UUID) (*entities.MasterProductPtXyz, error) 
 }
 
 type RepositoryMasterProductXYZImpl struct {
@@ -24,6 +25,20 @@ func (r *RepositoryMasterProductXYZImpl) GetMasterProductForTransactionById(tx *
 	query := `SELECT * FROM master_product_pt_xyz WHERE id = ? FOR UPDATE`
 	var masterProductPtXyz entities.MasterProductPtXyz
 	err := tx.Get(&masterProductPtXyz, query, id)
+	if err != nil {
+		return nil, err
+	}
+
+
+	return &masterProductPtXyz, nil
+}
+
+
+func (r *RepositoryMasterProductXYZImpl) GetMasterProductByCreator(id uuid.UUID) (*entities.MasterProductPtXyz, error) {
+	
+	query := `SELECT * FROM master_product_pt_xyz WHERE id_admin = ?`
+	var masterProductPtXyz entities.MasterProductPtXyz
+	err := r.db.Get(&masterProductPtXyz, query, id)
 	if err != nil {
 		return nil, err
 	}
