@@ -1,0 +1,206 @@
+{
+	"info": {
+		"_postman_id": "068ab070-d9a4-4996-85a7-2ffb7b6aea8a",
+		"name": "Gotest",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "16210922"
+	},
+	"item": [
+		{
+			"name": "Register",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"KTP\": \"1234567891\",\r\n  \"userName\": \"john_does\",\r\n  \"password\": \"securepassword\",\r\n  \"fullName\": \"John Doe\",\r\n  \"legalName\": \"Johnathan Doe\",\r\n  \"bornLocation\": \"Jakarta\",\r\n  \"bornDate\": \"1990-01-01\",\r\n  \"photoKTP\": \"link_to_photo_ktp\",\r\n  \"selfiePhoto\": \"link_to_selfie_photo\",\r\n  \"salary\": 5000.50\r\n}\r\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/v1/register",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"v1",
+						"register"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Login",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"userName\": \"john_does\",\r\n  \"password\": \"securepassword\"\r\n}\r\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/v1/login",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"v1",
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Login Admin",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"userName\": \"admin_iqbal\",\r\n  \"password\": \"admin123\",\r\n  \"isAdmin\": true\r\n}\r\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/v1/login",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"v1",
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "transaction interanal",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Ijk0NjI3NDg3LTA4YTItMTFmMC1hOGUwLTY1ZDBlZmVhYzcwMSIsInVzZXJfbmFtZSI6ImpvaG5fZG9lcyIsImlzX2FkbWluIjpmYWxzZSwiZXhwIjoxNzQ1NDM1Nzk5fQ.cDavMin2p8j_Ntkyed4rR62mJfWYIyl_Kqi9AmNHj68",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"isExternalCompany\": false,\r\n  \"transactionProducts\": [\r\n    {\r\n      \"productCompanyId\": \"82785b6c-08a2-11f0-a8e0-65d0efeac701\"\r\n    },\r\n    {\r\n      \"productCompanyId\": \"82786c3e-08a2-11f0-a8e0-65d0efeac701\"\r\n    }\r\n  ]\r\n}\r\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/v1/transaction",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"v1",
+						"transaction"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Test Admin",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjkyZjUzZjYxLTA4YTItMTFmMC1hOGUwLTY1ZDBlZmVhYzcwMSIsInVzZXJfbmFtZSI6ImFkbWluX2lxYmFsIiwiaXNfYWRtaW4iOnRydWUsImV4cCI6MTc0NTQzMjI1M30.IG0yQb78QWtRfuwkIaqZDbmJtcBYf70xQhFUlemXw74",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/v1/test-admin",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"v1",
+						"test-admin"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "create limit",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjkyZjUzZjYxLTA4YTItMTFmMC1hOGUwLTY1ZDBlZmVhYzcwMSIsInVzZXJfbmFtZSI6ImFkbWluX2lxYmFsIiwiaXNfYWRtaW4iOnRydWUsImV4cCI6MTc0NTQzMjI1M30.IG0yQb78QWtRfuwkIaqZDbmJtcBYf70xQhFUlemXw74",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"consumerID\":\"94627487-08a2-11f0-a8e0-65d0efeac701\",\r\n  \"limitLoan\": 5000000,\r\n  \"limitUsed\": 1000000,\r\n  \"tenorAmount\": 12\r\n}\r\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/v1/add-limit/consumer",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"v1",
+						"add-limit",
+						"consumer"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
