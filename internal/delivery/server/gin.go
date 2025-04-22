@@ -39,12 +39,20 @@ func Run() error {
 	
 	adminRepository := repository.NewRepositoryAdmin(database.DB)
 	consumerRepo := repository.NewRepositoryConsumer(database.DB)
+	transactionRepo := repository.NewRepositoryTransaction()
+	transactionProductRepo := repository.NewRepositoryTransactionProduct()
+	loanLimitRepo := repository.NewRepositoryLoanLimit()
+	loanInstallmentRepo := repository.NewRepositoryLoanInstallment()
+	masterProductXyzRepo := repository.NewRepositoryMasterProductXYZ()
 
 	adminService := usecases.NewServiceAdmin(adminRepository)
 	consumerService := usecases.NewServiceConsumer(consumerRepo, adminRepository)
+	transactionService := usecases.NewServiceTransaction(database.DB, transactionRepo, transactionProductRepo, loanLimitRepo, loanInstallmentRepo, masterProductXyzRepo)
 
 	consumerHandler := deliveryHttp.NewHandlerConsumer(consumerService)
+	transactionHandler := deliveryHttp.NewHandlerTransaction(transactionService)
 
+	// Sensitive Data Exposure
 	if os.Getenv("ADMIN_USERNAME") != "" && os.Getenv("ADMIN_PASSWORD") != "" && os.Getenv("ADMIN_FULLNAME") != "" {
         
         admin := entities.Admin{
@@ -69,6 +77,11 @@ func Run() error {
 	
 	routes.POST("/register", consumerHandler.Register)
 	routes.POST("/login", consumerHandler.Login)
+	
+	// Broken Access control
+
+	routes.POST("/transaction", middlewares.AuthMiddleware(), transactionHandler.CreateTransaction)
+	
 
 
 	routes.GET("/test-admin", middlewares.AuthMiddleware(), middlewares.AuthorizationMiddleware("admin"), func(c *gin.Context) {
