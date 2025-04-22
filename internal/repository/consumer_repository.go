@@ -2,11 +2,13 @@ package repository
 
 import (
 	"pt-xyz/internal/entities"
+
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 )
 
 type RepositoryConsumer interface {
-	GetConsumerById(id int) (*entities.Consumer, error)
+	GetConsumerById(id uuid.UUID) (*entities.Consumer, error)
 	GetConsumerByUserName(userName string) (*entities.Consumer, error)
 	GetConsumerByKTP(KTP string) (*entities.Consumer, error)
 	CreateConsumer(consumer *entities.ReqConsumer) error
@@ -32,7 +34,7 @@ func (r *RepositoryConsumerImpl) GetConsumerByKTP(KTP string) (*entities.Consume
 	return &consumer, nil
 }
 
-func (r *RepositoryConsumerImpl) GetConsumerById(id int) (*entities.Consumer, error) {
+func (r *RepositoryConsumerImpl) GetConsumerById(id uuid.UUID) (*entities.Consumer, error) {
 	query := `SELECT * FROM consumer WHERE id = ?`
 	
 	var consumer entities.Consumer

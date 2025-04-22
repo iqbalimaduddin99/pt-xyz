@@ -81,7 +81,7 @@ fmt.Println("Parsed Transaction UUID:", parsedUUID)
 	
 func uint64ToUUID(id uint64) uuid.UUID {
 	var uuidBytes [16]byte
-	binary.BigEndian.PutUint64(uuidBytes[:8], id) // Use the uint64 in the first 8 bytes
+	binary.BigEndian.PutUint64(uuidBytes[:8], id) 
 	return uuid.UUID(uuidBytes)
 }
 

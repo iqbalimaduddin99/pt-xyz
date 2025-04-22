@@ -1,6 +1,7 @@
 package database
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"time"
@@ -9,8 +10,20 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-var DB *sqlx.DB
+type Database interface {
+    Queryx(query string, args ...interface{}) (*sqlx.Rows, error)
+    Get(dest interface{}, query string, args ...interface{}) error
+    Exec(query string, args ...interface{}) (sql.Result, error)
+    NamedExec(query string, arg interface{}) (sql.Result, error)
+	MustBegin() *sqlx.Tx
+	Ping() error
+	SetMaxOpenConns(n int)
+	SetMaxIdleConns(n int)
+	SetConnMaxLifetime(d time.Duration)
+	Close() error
+}
 
+var DB *sqlx.DB  
 
 func Connect() error {
 	cfg := LoadConfig()
