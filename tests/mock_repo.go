@@ -11,12 +11,17 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+type MockDB struct { mock.Mock }
 type MockRepoAdmin struct{ mock.Mock }
 type MockRepoConsumer struct{ mock.Mock }
+type MockRepoLoanInstallment struct{ mock.Mock }
 type MockRepoLoanLimit struct{ mock.Mock }
 type MockRepoProduct struct{ mock.Mock }
-type MockDB struct { mock.Mock }
+type MockRepoTransactionProduct struct{ mock.Mock }
+type MockRepoTransaction struct{ mock.Mock }
 
+
+// MockDB
 func (m *MockDB) Queryx(query string, args ...interface{}) (*sqlx.Rows, error) {
 	argsList := m.Called(query, args)
 	return argsList.Get(0).(*sqlx.Rows), argsList.Error(1)
@@ -65,9 +70,20 @@ func (m *MockDB) Close() error {
 }
 
 // MockRepoAdmin
-func (m *MockRepoAdmin) GetAdmin() (bool, error)                            { return true, nil }
-func (m *MockRepoAdmin) CreateAdmin(*entities.Admin) error                  { return nil }
-func (m *MockRepoAdmin) GetAdminByUserName(string) (*entities.Admin, error) { return nil, nil }
+func (m *MockRepoAdmin) GetAdmin() (bool, error) {
+	args := m.Called()
+	return args.Bool(0), args.Error(1)
+}
+
+func (m *MockRepoAdmin) CreateAdmin(admin *entities.Admin) error {
+	args := m.Called(admin)
+	return args.Error(0)
+}
+
+func (m *MockRepoAdmin) GetAdminByUserName(userName string) (*entities.Admin, error) {
+	args := m.Called(userName)
+	return args.Get(0).(*entities.Admin), args.Error(1)
+}
 
 func (m *MockRepoAdmin) GetAdminByID(id uuid.UUID) (*entities.Admin, error) {
 	args := m.Called(id)
@@ -96,8 +112,13 @@ func (m *MockRepoConsumer) CreateConsumer(consumer *entities.ReqConsumer) error 
 	return args.Error(0)
 }
 
-//MockRepoLoanLimit
+//MockRepoInstallment
+func (m *MockRepoLoanInstallment) CreateLoanInstallment(tx *sqlx.DB, loanInstallment *entities.LoanInstallment) error {
+	args := m.Called(tx, loanInstallment)
+	return args.Error(0)
+}
 
+//MockRepoLoanLimit
 func (m *MockRepoLoanLimit) GetLoanLimitByID(tx database.Database, consumerID uuid.UUID) (*entities.LoanLimit, error) {
 	args := m.Called(tx, consumerID)
 	return args.Get(0).(*entities.LoanLimit), args.Error(1)
@@ -115,4 +136,16 @@ func (m *MockRepoProduct) GetMasterProductForTransactionById(tx *sqlx.DB, id uui
 func (m *MockRepoProduct) GetMasterProductByCreator(id uuid.UUID) (*entities.MasterProductPtXyz, error) {
 	args := m.Called(id)
 	return args.Get(0).(*entities.MasterProductPtXyz), args.Error(1)
+}
+
+//MockRepoTransactionProduct
+func (m *MockRepoTransactionProduct) CreateTransactionProduct(tx *sqlx.DB, transactionProduct *entities.TransactionProduct) error {
+	args := m.Called(tx, transactionProduct)
+	return args.Error(0)
+}
+
+//MockRepoTransaction
+func (m *MockRepoTransaction) CreateTransaction(tx *sqlx.DB, transaction *entities.TransactionTable) (uuid.UUID, error) {
+	args := m.Called(tx, transaction)
+	return args.Get(0).(uuid.UUID), args.Error(1)
 }

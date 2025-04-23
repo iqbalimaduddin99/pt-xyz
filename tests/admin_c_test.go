@@ -1,6 +1,8 @@
 package tests
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -11,30 +13,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
-type MockServiceAdmin struct{ 
-	mock.Mock 
-}
-
-func (m *MockServiceAdmin) GetCreation(id uuid.UUID) (*entities.MasterProductPtXyz, error) {
-	args := m.Called(id)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-
-	return args.Get(0).(*entities.MasterProductPtXyz), args.Error(1)
-}
-
-func (m *MockServiceAdmin) AddAdmin(admin *entities.Admin) {
-	panic("unimplemented")
-}
-
-
-func (m *MockServiceAdmin) AddLimitConsumer(loan *entities.LoanLimit) (string, error) {
-	panic("unimplemented")
-}
 
 func TestGetCreationHandler_Success(t *testing.T) {
 	mockService := new(MockServiceAdmin)
@@ -93,4 +73,82 @@ func TestGetCreationHandler_ServiceError(t *testing.T) {
 
 	assert.Equal(t, 500, resp.Code)
 	assert.Contains(t, resp.Body.String(), "error")
+}
+
+
+
+
+func TestAddLimitConsumerHandler_Success(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	mockService := new(MockServiceAdmin)
+	h := deliveryHttp.NewHandlerAdmin(mockService)
+
+	router := gin.Default()
+	router.POST("/add-limit/consumer", h.AddLimitConsumer)
+
+	consumerID := uuid.New()
+	loan := &entities.LoanLimit{}
+	loan.ConsumerID=consumerID
+	loan.ID=uuid.New()
+	loan.LimitLoan=50000
+
+	mockService.On("AddLimitConsumer", loan).Return(consumerID.String(), nil)
+
+	body, _ := json.Marshal(loan)
+	req, _ := http.NewRequest(http.MethodPost, "/add-limit/consumer", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	resp := httptest.NewRecorder()
+
+	router.ServeHTTP(resp, req)
+
+	assert.Equal(t, http.StatusOK, resp.Code)
+	mockService.AssertExpectations(t)
+}
+
+func TestAddLimitConsumerHandler_InvalidInput(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	mockService := new(MockServiceAdmin)
+	h := deliveryHttp.NewHandlerAdmin(mockService)
+
+	router := gin.Default()
+	router.POST("/add-limit/consumer", h.AddLimitConsumer)
+
+	req, _ := http.NewRequest(http.MethodPost, "/add-limit/consumer", bytes.NewBufferString(`invalid-json`))
+	req.Header.Set("Content-Type", "application/json")
+	resp := httptest.NewRecorder()
+
+	router.ServeHTTP(resp, req)
+
+	assert.Equal(t, http.StatusBadRequest, resp.Code)
+	mockService.AssertNotCalled(t, "AddLimitConsumer")
+}
+
+func TestAddLimitConsumerHandler_FailedToAdd(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	mockService := new(MockServiceAdmin)
+	h := deliveryHttp.NewHandlerAdmin(mockService)
+
+	router := gin.Default()
+	router.POST("/add-limit/consumer", h.AddLimitConsumer)
+
+	consumerID := uuid.New()
+	loan := &entities.LoanLimit{}
+	loan.ConsumerID=consumerID
+	loan.ID=uuid.New()
+	loan.LimitLoan=50000
+
+	mockService.On("AddLimitConsumer", loan).Return("", errors.New("something went wrong"))
+
+	body, _ := json.Marshal(loan)
+	req, _ := http.NewRequest(http.MethodPost, "/add-limit/consumer", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	resp := httptest.NewRecorder()
+
+	router.ServeHTTP(resp, req)
+
+	assert.Equal(t, http.StatusInternalServerError, resp.Code)
+	mockService.AssertExpectations(t)
 }

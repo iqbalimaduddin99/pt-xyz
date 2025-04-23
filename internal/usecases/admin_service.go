@@ -81,14 +81,11 @@ func (s *ServiceAdminImpl) AddLimitConsumer(loan *entities.LoanLimit) (string, e
 			return "", err
     }
 
-	fmt.Print(s.db)
 	existsLimitLoan, err := s.repoLoanLimit.GetLoanLimitByID(s.db, loan.ConsumerID)
 	if err != nil && err != sql.ErrNoRows  {
 			return "", err
     }
 
-	fmt.Println("err", err)
-	fmt.Println("existsLimitLoan", existsLimitLoan)
 	if existsLimitLoan != nil {
 		return "", errors.New("Consumer have limit")
 	}
