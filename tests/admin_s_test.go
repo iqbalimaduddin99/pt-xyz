@@ -1,7 +1,6 @@
 package tests
 
 import (
-	"database/sql"
 	"errors"
 	"testing"
 
@@ -9,10 +8,99 @@ import (
 	"pt-xyz/internal/usecases"
 
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
+
+
+func TestAddAdmin_AdminAlreadyExists(t *testing.T) {
+	mockAdminRepo := new(MockRepoAdmin)
+	mockProductRepo := new(MockRepoProduct)
+	mockRepoConsumer := new(MockRepoConsumer)
+	mockRepoLoanLimit := new(MockRepoLoanLimit)
+	mockDB := new(MockDB)
+
+	mockAdminRepo.On("GetAdmin").Return(true, nil)
+
+	svc := usecases.NewServiceAdmin(
+		mockDB, mockAdminRepo, mockRepoConsumer, mockRepoLoanLimit, mockProductRepo,
+	)
+
+	admin := &entities.Admin{UserName: "admin", Password: "password"}
+	svc.AddAdmin(admin)
+
+	mockAdminRepo.AssertCalled(t, "GetAdmin")
+	mockAdminRepo.AssertNotCalled(t, "CreateAdmin")
+}
+
+func TestAddAdmin_CheckAdminFails(t *testing.T) {
+	mockAdminRepo := new(MockRepoAdmin)
+	mockProductRepo := new(MockRepoProduct)
+	mockRepoConsumer := new(MockRepoConsumer)
+	mockRepoLoanLimit := new(MockRepoLoanLimit)
+	mockDB := new(MockDB)
+
+
+	mockAdminRepo.On("GetAdmin").Return(false, errors.New("db error"))
+	mockAdminRepo.On("CreateAdmin", mock.Anything).Return(nil)
+
+	svc := usecases.NewServiceAdmin(
+		mockDB, mockAdminRepo, mockRepoConsumer, mockRepoLoanLimit, mockProductRepo,
+	)
+
+	admin := &entities.Admin{UserName: "admin", Password: "password"}
+	svc.AddAdmin(admin)
+
+	mockAdminRepo.AssertCalled(t, "GetAdmin")
+	mockAdminRepo.AssertCalled(t, "CreateAdmin", mock.Anything)
+}
+
+
+func TestAddAdmin_CreateAdminFails(t *testing.T) {	
+	mockAdminRepo := new(MockRepoAdmin)
+	mockProductRepo := new(MockRepoProduct)
+	mockRepoConsumer := new(MockRepoConsumer)
+	mockRepoLoanLimit := new(MockRepoLoanLimit)
+	mockDB := new(MockDB)
+	
+	mockAdminRepo.On("GetAdmin").Return(false, nil)
+	mockAdminRepo.On("CreateAdmin", mock.Anything).Return(errors.New("insert error"))
+
+	svc := usecases.NewServiceAdmin(
+		mockDB, mockAdminRepo, mockRepoConsumer, mockRepoLoanLimit, mockProductRepo,
+	)
+
+	admin := &entities.Admin{UserName: "admin", Password: "password"}
+	svc.AddAdmin(admin)
+
+	mockAdminRepo.AssertCalled(t, "CreateAdmin", mock.Anything)
+}
+
+func TestAddAdmin_Success(t *testing.T) {
+	mockAdminRepo := new(MockRepoAdmin)
+	mockProductRepo := new(MockRepoProduct)
+	mockRepoConsumer := new(MockRepoConsumer)
+	mockRepoLoanLimit := new(MockRepoLoanLimit)
+	mockDB := new(MockDB)
+	
+	mockAdminRepo.On("GetAdmin").Return(false, nil)
+	mockAdminRepo.On("CreateAdmin", mock.Anything).Return(nil)
+	
+	svc := usecases.NewServiceAdmin(
+		mockDB, mockAdminRepo, mockRepoConsumer, mockRepoLoanLimit, mockProductRepo,
+	)
+
+	admin := &entities.Admin{UserName: "admin", Password: "password", FullName: "Admin XYZ"}
+	svc.AddAdmin(admin)
+
+	mockAdminRepo.AssertCalled(t, "GetAdmin")
+	mockAdminRepo.AssertCalled(t, "CreateAdmin", mock.MatchedBy(func(a *entities.Admin) bool {
+		return a.UserName == "admin" &&
+			a.FullName == "Admin XYZ" &&
+			a.Password != "password"
+	}))
+}
 
 
 func TestGetCreation_Success(t *testing.T) {
@@ -60,7 +148,8 @@ func TestGetCreation_DBError(t *testing.T) {
 	mockProductRepo := new(MockRepoProduct)
 	mockRepoConsumer := new(MockRepoConsumer)
 	mockRepoLoanLimit := new(MockRepoLoanLimit)
-	service := usecases.NewServiceAdmin(sqlx.NewDb(&sql.DB{},""), mockAdminRepo, mockRepoConsumer, mockRepoLoanLimit, mockProductRepo)
+	mockDB := new(MockDB)
+	service := usecases.NewServiceAdmin(mockDB, mockAdminRepo, mockRepoConsumer, mockRepoLoanLimit, mockProductRepo)
 
 	id := uuid.New()
 
@@ -69,4 +158,119 @@ func TestGetCreation_DBError(t *testing.T) {
 	result, err := service.GetCreation(id)
 	assert.Nil(t, result)
 	assert.ErrorContains(t, err, "db error")
+}
+
+
+func TestAddLimitConsumer_Success(t *testing.T) {
+	mockAdminRepo := new(MockRepoAdmin)
+	mockProductRepo := new(MockRepoProduct)
+	mockRepoConsumer := new(MockRepoConsumer)
+	mockRepoLoanLimit := new(MockRepoLoanLimit)
+	mockDB := new(MockDB)
+
+	idConsumer := uuid.New()
+
+	loan := &entities.LoanLimit{}
+	loan.ConsumerID=idConsumer
+	
+	consumer := &entities.Consumer{}
+	consumer.ID=idConsumer
+
+	mockRepoConsumer.On("GetConsumerById", idConsumer).Return(consumer, nil)
+	mockRepoLoanLimit.On("GetLoanLimitByID", mockDB, idConsumer).Return((*entities.LoanLimit)(nil), nil)
+	mockRepoLoanLimit.On("CreateLoanLimit", loan).Return(nil)
+
+	svc := usecases.NewServiceAdmin(mockDB, mockAdminRepo, mockRepoConsumer, mockRepoLoanLimit, mockProductRepo)
+
+	result, err := svc.AddLimitConsumer(loan)
+
+	assert.NoError(t, err)
+	assert.Equal(t, loan.ConsumerID.String(), result)
+
+	mockRepoConsumer.AssertExpectations(t)
+	mockRepoLoanLimit.AssertExpectations(t)
+}
+
+func TestAddLimitConsumer_ConsumerNotFound(t *testing.T) {
+	mockRepoConsumer := new(MockRepoConsumer)
+	mockRepoLoanLimit := new(MockRepoLoanLimit)
+	mockDB := new(MockDB)
+
+	idConsumer := uuid.New()
+	idLoan := uuid.New()
+	loan := &entities.LoanLimit{}
+	loan.ID = idLoan
+	loan.ConsumerID = idConsumer
+
+	mockRepoConsumer.On("GetConsumerById", idConsumer).Return(&entities.Consumer{}, errors.New("consumer not found"))
+
+	svc := usecases.NewServiceAdmin(mockDB, nil, mockRepoConsumer, mockRepoLoanLimit, nil)
+
+	result, err := svc.AddLimitConsumer(loan)
+
+	assert.Error(t, err)
+	assert.Empty(t, result)
+	assert.Equal(t, "consumer not found", err.Error())
+
+	mockRepoConsumer.AssertExpectations(t)
+}
+
+
+func TestAddLimitConsumer_ConsumerAlreadyHasLimit(t *testing.T) {
+	mockRepoConsumer := new(MockRepoConsumer)
+	mockRepoLoanLimit := new(MockRepoLoanLimit)
+	mockDB := new(MockDB)
+
+	idConsumer := uuid.New()
+	loan := &entities.LoanLimit{
+		ConsumerID: idConsumer,
+		LimitLoan:      10000,
+	}
+
+	consumer := &entities.Consumer{}
+	consumer.ID=idConsumer
+
+	mockRepoConsumer.On("GetConsumerById", idConsumer).Return(consumer, nil)
+	mockRepoLoanLimit.On("GetLoanLimitByID", mockDB, idConsumer).Return(&entities.LoanLimit{}, nil)
+
+	svc := usecases.NewServiceAdmin(mockDB, nil, mockRepoConsumer, mockRepoLoanLimit, nil)
+
+	result, err := svc.AddLimitConsumer(loan)
+
+	assert.Error(t, err)
+	assert.Empty(t, result)
+	assert.Equal(t, "Consumer have limit", err.Error())
+
+	mockRepoConsumer.AssertExpectations(t)
+	mockRepoLoanLimit.AssertExpectations(t)
+}
+
+func TestAddLimitConsumer_CreateLoanLimitFails(t *testing.T) {
+	mockRepoConsumer := new(MockRepoConsumer)
+	mockRepoLoanLimit := new(MockRepoLoanLimit)
+	mockDB := new(MockDB)
+
+	idConsumer := uuid.New()
+	loan := &entities.LoanLimit{
+		ConsumerID: idConsumer,
+		LimitLoan:      10000,
+	}
+
+	consumer := &entities.Consumer{}
+	consumer.ID=idConsumer
+
+	mockRepoConsumer.On("GetConsumerById", idConsumer).Return(consumer, nil)
+	mockRepoLoanLimit.On("GetLoanLimitByID", mockDB, idConsumer).Return((*entities.LoanLimit)(nil), nil)
+	mockRepoLoanLimit.On("CreateLoanLimit", loan).Return(errors.New("failed to insert loan limit"))
+
+	svc := usecases.NewServiceAdmin(mockDB, nil, mockRepoConsumer, mockRepoLoanLimit, nil)
+
+	result, err := svc.AddLimitConsumer(loan)
+
+	assert.Error(t, err)
+	assert.Empty(t, result)
+	assert.Equal(t, "failed to insert loan limit: failed to insert loan limit", err.Error())
+
+	mockRepoConsumer.AssertExpectations(t)
+	mockRepoLoanLimit.AssertExpectations(t)
 }

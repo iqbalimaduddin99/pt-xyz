@@ -11,17 +11,22 @@ import (
 	"github.com/google/uuid"
 )
 
+type ServiceConsumer interface {
+	RegisterConsumer(consumer *entities.ReqConsumer) (string, error)
+	Login(loginRequest *entities.LoginRequest) (string, error)
+}
 
-type ServiceConsumer struct {
+type ServiceConsumerImpl struct {
 	repo repository.RepositoryConsumer
 	repoAdmin repository.RepositoryAdmin
+	jwtGen    func(userID uuid.UUID, userName string, isAdmin bool) (string, error)
 }
 
-func NewServiceConsumer(repo repository.RepositoryConsumer, repoAdmin repository.RepositoryAdmin) *ServiceConsumer {
-	return &ServiceConsumer{repo: repo, repoAdmin: repoAdmin}
+func NewServiceConsumer(repo repository.RepositoryConsumer, repoAdmin repository.RepositoryAdmin) *ServiceConsumerImpl {
+	return &ServiceConsumerImpl{repo: repo, repoAdmin: repoAdmin, jwtGen: pkg.GenerateJWT,}
 }
 
-func (s *ServiceConsumer) RegisterConsumer(consumer *entities.ReqConsumer) (string, error) {
+func (s *ServiceConsumerImpl) RegisterConsumer(consumer *entities.ReqConsumer) (string, error) {
 	exists, err := s.repo.GetConsumerByUserName(consumer.UserName)
 	if err != nil && err != sql.ErrNoRows {
 			return "", err
@@ -47,7 +52,7 @@ func (s *ServiceConsumer) RegisterConsumer(consumer *entities.ReqConsumer) (stri
 
 	err = s.repo.CreateConsumer(consumer)
 	if err != nil {
-		fmt.Errorf("Failed to insert consumer:", err)
+		return "", fmt.Errorf("Failed to insert consumer:", err)
 	}
 
 	return consumer.UserName, nil
@@ -56,7 +61,7 @@ func (s *ServiceConsumer) RegisterConsumer(consumer *entities.ReqConsumer) (stri
 
 
 
-func (s *ServiceConsumer) Login(loginRequest *entities.LoginRequest) (string, error) {
+func (s *ServiceConsumerImpl) Login(loginRequest *entities.LoginRequest) (string, error) {
 	var token string
 	var err error
 
@@ -70,14 +75,20 @@ func (s *ServiceConsumer) Login(loginRequest *entities.LoginRequest) (string, er
 			return "", fmt.Errorf("Invalid username or password")
 		}
 		
-		token, err = ComparePassAndGenerateJWT(admin.Password, loginRequest.Password, true, admin.ID, admin.UserName)
+		token, err = ComparePassAndGenerateJWT(admin.Password, loginRequest.Password, true, admin.ID, admin.UserName, s.jwtGen)
+		if err != nil {
+			return "", fmt.Errorf("Invalid username or password")
+		}
 	} else {
 		consumer, err := s.repo.GetConsumerByUserName(loginRequest.UserName)
 		if err != nil || consumer == nil {
 			return "", fmt.Errorf("Invalid username or password")
 		}
 		
-		token, err = ComparePassAndGenerateJWT(consumer.Password, loginRequest.Password, false, consumer.ID, consumer.UserName)
+		token, err = ComparePassAndGenerateJWT(consumer.Password, loginRequest.Password, false, consumer.ID, consumer.UserName, s.jwtGen)
+		if err != nil {
+			return "", fmt.Errorf("Invalid username or password")
+		}
 	}
 
 	if err != nil {
@@ -87,7 +98,7 @@ func (s *ServiceConsumer) Login(loginRequest *entities.LoginRequest) (string, er
 }
 
 
-func ComparePassAndGenerateJWT(passwordEncrypted string, reqPassword string, isAdmin bool, userID uuid.UUID, userName string) (string, error) {
+func ComparePassAndGenerateJWT(passwordEncrypted string, reqPassword string, isAdmin bool, userID uuid.UUID, userName string, genJWT func(uuid.UUID, string, bool) (string, error)) (string, error) {
 
 	err := bcrypt.CompareHashAndPassword([]byte(passwordEncrypted), []byte(reqPassword))
 	if err != nil {
@@ -95,7 +106,7 @@ func ComparePassAndGenerateJWT(passwordEncrypted string, reqPassword string, isA
 	}
 
 	
-	token, err := pkg.GenerateJWT(userID, userName, isAdmin)
+	token, err := genJWT(userID, userName, isAdmin)
 	if err != nil {
 		return "", fmt.Errorf("Error generating token: %v", err)
 	}

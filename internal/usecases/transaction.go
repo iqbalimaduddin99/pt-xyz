@@ -100,6 +100,9 @@ func (s *ServiceTransaction) CreateTransaction(transaction *entities.Transaction
 		}
 			return "", err
     }
+	if existsLimitLoan == nil  {
+		return "", fmt.Errorf("You don't have limit")
+    }
 
 	if (existsLimitLoan != nil && existsLimitLoan.LimitLoan < totalPrice) {
 		return "", fmt.Errorf("You don't have limit")
