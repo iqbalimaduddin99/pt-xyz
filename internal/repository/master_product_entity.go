@@ -8,7 +8,7 @@ import (
 )
 
 type RepositoryMasterProductXYZ interface {
-	GetMasterProductForTransactionById(tx *sqlx.DB,id uuid.UUID)  (*entities.MasterProductPtXyz, error)
+	GetMasterProductForTransactionById(tx *sqlx.Tx,id uuid.UUID)  (*entities.MasterProductPtXyz, error)
 	GetMasterProductByCreator(id uuid.UUID) (*entities.MasterProductPtXyz, error) 
 }
 
@@ -20,7 +20,7 @@ func NewRepositoryMasterProductXYZ() *RepositoryMasterProductXYZImpl {
 	return &RepositoryMasterProductXYZImpl{}
 }
 
-func (r *RepositoryMasterProductXYZImpl) GetMasterProductForTransactionById(tx *sqlx.DB,id uuid.UUID) (*entities.MasterProductPtXyz, error) {
+func (r *RepositoryMasterProductXYZImpl) GetMasterProductForTransactionById(tx *sqlx.Tx,id uuid.UUID) (*entities.MasterProductPtXyz, error) {
 	
 	query := `SELECT * FROM master_product_pt_xyz WHERE id = ? FOR UPDATE`
 	var masterProductPtXyz entities.MasterProductPtXyz

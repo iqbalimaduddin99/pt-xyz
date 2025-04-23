@@ -10,7 +10,7 @@ import (
 )
 
 type RepositoryTransaction interface {
-	CreateTransaction(tx *sqlx.DB,transaction *entities.TransactionTable) (uuid.UUID, error)
+	CreateTransaction(tx *sqlx.Tx,transaction *entities.TransactionTable) (uuid.UUID, error)
 }
 
 type RepositoryTransactionImpl struct {
@@ -21,7 +21,7 @@ func NewRepositoryTransaction() *RepositoryTransactionImpl {
 	return &RepositoryTransactionImpl{}
 }
 
-func (r *RepositoryTransactionImpl) CreateTransaction(tx *sqlx.DB,transaction *entities.TransactionTable) (uuid.UUID, error) {
+func (r *RepositoryTransactionImpl) CreateTransaction(tx *sqlx.Tx,transaction *entities.TransactionTable) (uuid.UUID, error) {
 	
 	fmt.Println(transaction)
 	fmt.Println(transaction.CompanyID)

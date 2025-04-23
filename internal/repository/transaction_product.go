@@ -6,7 +6,7 @@ import (
 )
 
 type RepositoryTransactionProduct interface {
-	CreateTransactionProduct(tx *sqlx.DB,transactionProduct *entities.TransactionProduct) error
+	CreateTransactionProduct(tx *sqlx.Tx,transactionProduct *entities.TransactionProduct) error
 }
 
 type RepositoryTransactionProductImpl struct {
@@ -17,7 +17,7 @@ func NewRepositoryTransactionProduct() *RepositoryTransactionProductImpl {
 	return &RepositoryTransactionProductImpl{}
 }
 
-func (r *RepositoryTransactionProductImpl) CreateTransactionProduct(tx *sqlx.DB,transactionProduct *entities.TransactionProduct) error {
+func (r *RepositoryTransactionProductImpl) CreateTransactionProduct(tx *sqlx.Tx,transactionProduct *entities.TransactionProduct) error {
 	query := `
 		INSERT INTO transaction_product (
 			transaction_id, company_id, product_company_id, otr, asset_name, price
