@@ -113,12 +113,18 @@ func (m *MockRepoConsumer) CreateConsumer(consumer *entities.ReqConsumer) error 
 }
 
 //MockRepoInstallment
-func (m *MockRepoLoanInstallment) CreateLoanInstallment(tx *sqlx.DB, loanInstallment *entities.LoanInstallment) error {
+func (m *MockRepoLoanInstallment) CreateLoanInstallment(tx *sqlx.Tx, loanInstallment *entities.LoanInstallment) error {
 	args := m.Called(tx, loanInstallment)
 	return args.Error(0)
 }
 
 //MockRepoLoanLimit
+
+func (m *MockRepoLoanLimit) GetLoanLimitByIDTransaction(tx *sqlx.Tx, consumerID uuid.UUID) (*entities.LoanLimit, error) {
+	args := m.Called(tx, consumerID)
+	return args.Get(0).(*entities.LoanLimit), args.Error(1)
+}
+
 func (m *MockRepoLoanLimit) GetLoanLimitByID(tx database.Database, consumerID uuid.UUID) (*entities.LoanLimit, error) {
 	args := m.Called(tx, consumerID)
 	return args.Get(0).(*entities.LoanLimit), args.Error(1)
@@ -130,7 +136,7 @@ func (m *MockRepoLoanLimit) CreateLoanLimit(limit *entities.LoanLimit) error {
 }
 
 // MockRepoProduct
-func (m *MockRepoProduct) GetMasterProductForTransactionById(tx *sqlx.DB, id uuid.UUID) (*entities.MasterProductPtXyz, error) {
+func (m *MockRepoProduct) GetMasterProductForTransactionById(tx *sqlx.Tx, id uuid.UUID) (*entities.MasterProductPtXyz, error) {
 	panic("unimplemented")
 }
 func (m *MockRepoProduct) GetMasterProductByCreator(id uuid.UUID) (*entities.MasterProductPtXyz, error) {
@@ -139,13 +145,13 @@ func (m *MockRepoProduct) GetMasterProductByCreator(id uuid.UUID) (*entities.Mas
 }
 
 //MockRepoTransactionProduct
-func (m *MockRepoTransactionProduct) CreateTransactionProduct(tx *sqlx.DB, transactionProduct *entities.TransactionProduct) error {
+func (m *MockRepoTransactionProduct) CreateTransactionProduct(tx *sqlx.Tx, transactionProduct *entities.TransactionProduct) error {
 	args := m.Called(tx, transactionProduct)
 	return args.Error(0)
 }
 
 //MockRepoTransaction
-func (m *MockRepoTransaction) CreateTransaction(tx *sqlx.DB, transaction *entities.TransactionTable) (uuid.UUID, error) {
+func (m *MockRepoTransaction) CreateTransaction(tx *sqlx.Tx, transaction *entities.TransactionTable) (uuid.UUID, error) {
 	args := m.Called(tx, transaction)
 	return args.Get(0).(uuid.UUID), args.Error(1)
 }

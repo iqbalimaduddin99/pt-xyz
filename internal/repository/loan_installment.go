@@ -7,7 +7,7 @@ import (
 )
 
 type RepositoryLoanInstallment interface {
-	CreateLoanInstallment(tx *sqlx.DB,LoanInstallment *entities.LoanInstallment) error
+	CreateLoanInstallment(tx *sqlx.Tx,LoanInstallment *entities.LoanInstallment) error
 }
 
 type RepositoryLoanInstallmentImpl struct {
@@ -18,7 +18,7 @@ func NewRepositoryLoanInstallment() *RepositoryLoanInstallmentImpl {
 	return &RepositoryLoanInstallmentImpl{}
 }
 
-func (r *RepositoryLoanInstallmentImpl) CreateLoanInstallment(tx *sqlx.DB,LoanInstallment *entities.LoanInstallment) error {
+func (r *RepositoryLoanInstallmentImpl) CreateLoanInstallment(tx *sqlx.Tx,LoanInstallment *entities.LoanInstallment) error {
 	query := `
 		INSERT INTO loan_installment (
 			transaction_id, consumer_id, installment_amount, tenor, interest_rate
