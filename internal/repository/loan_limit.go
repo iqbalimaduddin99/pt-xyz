@@ -10,6 +10,7 @@ import (
 )
 
 type RepositoryLoanLimit interface {
+	GetLoanLimitByIDTransaction(tx *sqlx.Tx,consumerID uuid.UUID) (*entities.LoanLimit, error)
 	GetLoanLimitByID(tx database.Database,consumerID uuid.UUID) (*entities.LoanLimit, error)
 	CreateLoanLimit(limit *entities.LoanLimit) error
 }
@@ -20,6 +21,24 @@ type RepositoryLoanLimitImpl struct {
 
 func NewRepositoryLoanLimit(db *sqlx.DB) *RepositoryLoanLimitImpl {
 	return &RepositoryLoanLimitImpl{db: db}
+}
+
+
+func (r *RepositoryLoanLimitImpl) GetLoanLimitByIDTransaction(tx *sqlx.Tx,consumerID uuid.UUID) (*entities.LoanLimit, error) {
+
+	query := `SELECT * FROM loan_limit WHERE consumer_id = ?`
+	
+	var loanLimit entities.LoanLimit
+	err := tx.Get(&loanLimit, query, consumerID)
+	if err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+
+	if loanLimit.ConsumerID == uuid.Nil {
+		return nil, nil
+	}
+
+	return &loanLimit, nil
 }
 
 func (r *RepositoryLoanLimitImpl) GetLoanLimitByID(tx database.Database,consumerID uuid.UUID) (*entities.LoanLimit, error) {

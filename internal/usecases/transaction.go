@@ -28,21 +28,30 @@ func NewServiceTransaction(db *sqlx.DB, repo repository.RepositoryTransaction, r
 
 func (s *ServiceTransaction) CreateTransaction(transaction *entities.TransactionTableReq,claims *pkg.Claims) (string, error) {
 	
-	// tx, err := s.db.Beginx()
-	// if err != nil {
-	// 	log.Println("tx failed")
-	// }
+	tx, err := s.db.Beginx()
+	if err != nil {
+		// log.Println("tx failed")
+	}
 
 
-	_, err := s.db.Exec("START TRANSACTION;")
-    if err != nil {
-		return "", err
-    }
+	// _, err := s.db.Exec("START TRANSACTION;")
+    // if err != nil {
+	// 	return "", err
+    // }
 
 
 	if err != nil {
 		return "", err
 	} 
+
+	defer func() {
+        if p := recover(); p != nil {
+            tx.Rollback()
+            panic(p) 
+        } else if err != nil {
+            tx.Rollback()
+        }
+    }()
 	var totalPrice float64
 	var transactionTbl entities.TransactionTable
 
@@ -52,11 +61,12 @@ func (s *ServiceTransaction) CreateTransaction(transaction *entities.Transaction
 		transactionTbl.ID = uuid.Nil
 		
 			for index, product := range transaction.TransactionProducts {
-				productData, err := s.repoMasterProductXYZ.GetMasterProductForTransactionById(s.db, product.ProductCompanyID)
+				productData, err := s.repoMasterProductXYZ.GetMasterProductForTransactionById(tx, product.ProductCompanyID)
 				if err != nil {
 					return "", err
 				}
 				if (productData.Stock == 0) {
+					tx.Rollback()
 					return "", fmt.Errorf("Run out of stock")
 				}
 				if (index == 0) {
@@ -65,7 +75,7 @@ func (s *ServiceTransaction) CreateTransaction(transaction *entities.Transaction
 					transactionTbl.CompanyCategory = productData.CompanyCategory
 					transactionTbl.ContactNumber = productData.ContactNumber
 					transactionTbl.AdminFee = productData.AdminFee
-					idTransaction, err := s.repo.CreateTransaction(s.db, &transactionTbl)
+					idTransaction, err := s.repo.CreateTransaction(tx, &transactionTbl)
 
 					if err != nil {
 						return "", err
@@ -80,7 +90,7 @@ func (s *ServiceTransaction) CreateTransaction(transaction *entities.Transaction
 				product.OTR = productData.OTR 
 				product.TransactionID = transactionTbl.ID
 				
-				err = s.repoTransactionProduct.CreateTransactionProduct(s.db, &product)
+				err = s.repoTransactionProduct.CreateTransactionProduct(tx, &product)
 
 				totalPrice += productData.Price
 			}
@@ -93,7 +103,7 @@ func (s *ServiceTransaction) CreateTransaction(transaction *entities.Transaction
 
 	transaction.TotalPrice = totalPrice
 
-	existsLimitLoan, err := s.repoLoanLimit.GetLoanLimitByID(s.db, claims.ID)
+	existsLimitLoan, err := s.repoLoanLimit.GetLoanLimitByIDTransaction(tx, claims.ID)
 	if err != nil  {
 		if (err == sql.ErrNoRows) {
 				return "", fmt.Errorf("You don't have limit")
@@ -101,10 +111,12 @@ func (s *ServiceTransaction) CreateTransaction(transaction *entities.Transaction
 			return "", err
     }
 	if existsLimitLoan == nil  {
+		tx.Rollback();
 		return "", fmt.Errorf("You don't have limit")
     }
 
 	if (existsLimitLoan != nil && existsLimitLoan.LimitLoan < totalPrice) {
+		tx.Rollback();
 		return "", fmt.Errorf("You don't have limit")
 	}
 	
@@ -123,16 +135,20 @@ func (s *ServiceTransaction) CreateTransaction(transaction *entities.Transaction
 			InterestRate:    interestRate,
 			Tenor:           currentDate.AddDate(0, i, 0), 
 		}
-		err = s.repoLoanInstallment.CreateLoanInstallment(s.db, &loanInstallment)
+		err = s.repoLoanInstallment.CreateLoanInstallment(tx, &loanInstallment)
 		if err != nil {
 			return "", err
 		}
 	}
+	//Test pingin error aja 
+	// return "", errors.New("Pinginn error aja")
 
-	_, commitErr := s.db.Exec("COMMIT;")
-    if commitErr != nil {
-		return "", err
-    }
+	// _, commitErr := s.db.Exec("COMMIT;")
+    // if commitErr != nil {
+	// 	return "", err
+    // }
+	
+    err = tx.Commit();
 	return "Succes Create Transaction", nil
 
 }

@@ -1,0 +1,10 @@
+Here, I will explain the Git Flow workflow of the branch that I created. 
+The first branch that I created was the master branch first as the main branch. 
+After that, I created a develop branch taken from the master branch which was used to collect all changes from the developers. 
+Developers who want to work on new features will create a feature branch taken from develop.
+
+If the feature created by the developer is complete, the developer will merge it first to the staging branch for testing. 
+If it is fixed, then create a pull request from the feature branch to develop. 
+After that, pull request again from develop to master to be released to production.
+
+The staging branch itself is not used for pull requests or pulled to other branches because it is only used for testing.
